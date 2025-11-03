@@ -1,0 +1,39 @@
+package com.wafflestudio.spring2025.timetableLecture
+
+import com.wafflestudio.spring2025.DomainException
+import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatusCode
+import com.wafflestudio.spring2025.timetable.TimetableNotFoundException
+
+sealed class TimetableLectureException(
+    errorCode: Int,
+    httpStatusCode: HttpStatusCode,
+    msg: String,
+    cause: Throwable? = null,
+) : DomainException(errorCode, httpStatusCode, msg, cause)
+
+typealias InvalidTimetableException = TimetableNotFoundException
+
+class InvalidLectureIdException: TimetableLectureException(
+    errorCode = 0,
+    httpStatusCode = HttpStatus.BAD_REQUEST,
+    msg = "Invalid lecture id",
+)
+
+class TimetableAccessForbiddenException: TimetableLectureException(
+    errorCode = 0,
+    httpStatusCode = HttpStatus.FORBIDDEN,
+    msg = "You don't have permission to access this Timetable"
+)
+
+class LectureTimeConflictException: TimetableLectureException(
+    errorCode = 0,
+    httpStatusCode = HttpStatus.CONFLICT,
+    msg = "Lecture time conflict"
+)
+
+class MatchFailedException: TimetableLectureException(
+    errorCode = 0,
+    httpStatusCode = HttpStatus.NOT_FOUND,
+    msg = "Matching (timetable, lecture) not found",
+)
