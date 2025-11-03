@@ -7,10 +7,10 @@ import java.time.LocalTime
 
 @Table("locationtimes")
 class LocationTime(
-    @Id val id: Long,
+    @Id val id: Long? = null,
     val lectureId: Long,
     val dayOfWeek: Int,
     val startTime: Int,
     val endTime: Int,
-    val location: String,
+    val location: String? = null,
 )

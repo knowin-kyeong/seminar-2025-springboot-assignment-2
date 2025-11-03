@@ -4,10 +4,16 @@ import com.wafflestudio.spring2025.board.model.Board
 import com.wafflestudio.spring2025.board.repository.BoardRepository
 import com.wafflestudio.spring2025.comment.model.Comment
 import com.wafflestudio.spring2025.comment.repository.CommentRepository
+import com.wafflestudio.spring2025.lecture.model.Lecture
+import com.wafflestudio.spring2025.lecture.repository.LectureRepository
+import com.wafflestudio.spring2025.locationtime.model.LocationTime
+import com.wafflestudio.spring2025.locationtime.repository.LocationTimeRepository
 import com.wafflestudio.spring2025.post.model.Post
 import com.wafflestudio.spring2025.post.repository.PostRepository
 import com.wafflestudio.spring2025.timetable.model.Timetable
 import com.wafflestudio.spring2025.timetable.repository.TimetableRepository
+import com.wafflestudio.spring2025.timetableLecture.model.TimetableLecture
+import com.wafflestudio.spring2025.timetableLecture.repository.TimetableLectureRepository
 import com.wafflestudio.spring2025.user.JwtTokenProvider
 import com.wafflestudio.spring2025.user.model.User
 import com.wafflestudio.spring2025.user.repository.UserRepository
@@ -22,6 +28,9 @@ class DataGenerator(
     private val postRepository: PostRepository,
     private val timetableRepository: TimetableRepository,
     private val commentRepository: CommentRepository,
+    private val lectureRepository: LectureRepository,
+    private val locationTimeRepository: LocationTimeRepository,
+    private val timetableLectureRepository: TimetableLectureRepository,
     private val jwtTokenProvider: JwtTokenProvider,
 ) {
     fun generateUser(
@@ -97,5 +106,50 @@ class DataGenerator(
             ),
         )
 
+    fun generateLectureandLocationTime(
+        title: String? = null,
+        credit: Int = 3,
+        dayofWeek: Int = 0,
+        startTime: Int = 0,
+        endTime: Int = 90,
+    ): Lecture {
+        val lecture =
+            lectureRepository.save(
+                Lecture(
+                    year = 2025,
+                    semester = 2,
+                    title = title ?: "title-${Random.nextInt(10000)}",
+                    lectureNumber = Random.nextInt(10000).toString(),
+                    classNumber = Random.nextInt(1000).toString(),
+                    credit = credit,
+                )
+            )
 
+        val locationTime =
+            locationTimeRepository.save(
+                LocationTime(
+                    lectureId = lecture.id!!,
+                    dayOfWeek = dayofWeek,
+                    startTime = startTime,
+                    endTime = endTime
+                )
+            )
+
+        return lecture
+    }
+
+    fun connectTimetableWithLecture(
+        timetable: Timetable,
+        lecture: Lecture
+    ): TimetableLecture{
+        val timetableLecture =
+            timetableLectureRepository.save(
+                TimetableLecture(
+                    timetableId = timetable.id!!,
+                    lectureId = lecture.id!!,
+                )
+            )
+
+        return timetableLecture
+    }
 }

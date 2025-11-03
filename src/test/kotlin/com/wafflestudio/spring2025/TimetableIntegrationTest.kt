@@ -2,6 +2,7 @@ package com.wafflestudio.spring2025
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.wafflestudio.spring2025.helper.DataGenerator
+import com.wafflestudio.spring2025.lecture.repository.LectureRepository
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,6 +17,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import com.wafflestudio.spring2025.timetable.repository.TimetableRepository
 import com.wafflestudio.spring2025.timetable.dto.CreateTimetableRequest
 import com.wafflestudio.spring2025.timetable.dto.UpdateTimetableRequest
+import com.wafflestudio.spring2025.timetableLecture.dto.CreateTimetableLectureRequest
 
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
@@ -39,7 +41,7 @@ class TimetableIntegrationTest
         private val mapper: ObjectMapper,
         private val dataGenerator: DataGenerator,
         private val timetableRepository: TimetableRepository,
-        // private val courseRepository: CourseRepository
+        private val lectureRepository: LectureRepository,
     ) {
         @Test
         fun `should create a timetable`() {
@@ -135,7 +137,7 @@ class TimetableIntegrationTest
                 .perform(
                     delete("/api/v1/timetables/${timetable.id!!}")
                         .header("Authorization", "Bearer $token"),
-                ).andExpect(status().isNoContent)
+                ).andExpect(status().isNoContent())
 
             assert(timetableRepository.findById(timetable.id!!).isEmpty)
         }
@@ -158,11 +160,28 @@ class TimetableIntegrationTest
         @Test
         fun `should search for courses`() {
             // 강의를 검색할 수 있다
+            // TODO
         }
 
         @Test
         fun `should add a course to timetable`() {
             // 시간표에 강의를 추가할 수 있다
+            val (user, token) = dataGenerator.generateUser()
+            val timetable = dataGenerator.generateTimetable(user = user)
+            val lecture = dataGenerator.generateLectureandLocationTime()
+
+            val request = CreateTimetableLectureRequest(
+                lectureId = lecture.id!!
+            )
+
+            mvc.perform(
+                post("/api/v1/timetables/${timetable.id!!}/lectures")
+                    .header("Authorization", "Bearer $token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(request)),
+            ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.timetableId").value(timetable.id!!))
+                .andExpect(jsonPath("$.lectureId").value(lecture.id))
         }
 
         @Test
@@ -173,16 +192,56 @@ class TimetableIntegrationTest
         @Test
         fun `should not add a course to another user's timetable`() {
             // 다른 사람의 시간표에는 강의를 추가할 수 없다
+            val (user1, token1) = dataGenerator.generateUser()
+            val (user2, token2) = dataGenerator.generateUser()
+
+            val timetable1 = dataGenerator.generateTimetable(user = user1)
+            val lecture = dataGenerator.generateLectureandLocationTime()
+
+            val request = CreateTimetableLectureRequest(
+                lectureId = lecture.id!!
+            )
+
+            mvc.perform(
+                post("/api/v1/timetables/${timetable1.id!!}/lectures")
+                    .header("Authorization", "Bearer $token2")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(request)),
+            ).andExpect(status().isForbidden)
         }
 
         @Test
         fun `should remove a course from timetable`() {
             // 시간표에서 강의를 삭제할 수 있다
+            val (user, token) = dataGenerator.generateUser()
+            val timetable = dataGenerator.generateTimetable(user = user)
+            val lecture = dataGenerator.generateLectureandLocationTime()
+
+            val connection = dataGenerator.connectTimetableWithLecture(timetable, lecture)
+
+            mvc.perform (
+                delete("/api/v1/timetables/${timetable.id!!}/lectures/${lecture.id}")
+                    .header("Authorization", "Bearer $token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                ).andExpect(status().isNoContent)
         }
 
         @Test
         fun `should not remove a course from another user's timetable`() {
             // 다른 사람의 시간표에서는 강의를 삭제할 수 없다
+            val (user1, token1) = dataGenerator.generateUser()
+            val (user2, token2) = dataGenerator.generateUser()
+
+            val timetable1 = dataGenerator.generateTimetable(user = user1)
+            val lecture = dataGenerator.generateLectureandLocationTime()
+
+            val connection = dataGenerator.connectTimetableWithLecture(timetable1, lecture)
+
+            mvc.perform (
+                delete("/api/v1/timetables/${timetable1.id!!}/lectures/${lecture.id}")
+                    .header("Authorization", "Bearer $token2")
+                    .contentType(MediaType.APPLICATION_JSON)
+            ).andExpect(status().isForbidden)
         }
 
         @Test

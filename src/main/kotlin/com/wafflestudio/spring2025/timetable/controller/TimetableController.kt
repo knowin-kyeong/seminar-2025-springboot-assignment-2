@@ -21,11 +21,10 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
 
 @RestController
-@RequestMapping("/api/v1/timetables")
 class TimetableController(
     private val timetableService: TimetableService,
 ) {
-    @PostMapping
+    @PostMapping("/api/v1/timetables")
     fun create(
         @RequestBody createRequest: CreateTimetableRequest,
         @LoggedInUser user: User,
@@ -40,7 +39,7 @@ class TimetableController(
         return ResponseEntity.ok(timetable)
     }
 
-    @GetMapping
+    @GetMapping("/api/v1/timetables")
     fun list(
         @LoggedInUser user: User,
     ): ResponseEntity<ListTimetableResponse> {
@@ -48,7 +47,7 @@ class TimetableController(
         return ResponseEntity.ok(timetables)
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping("/api/v1/timetables/{id}")
     fun update(
         @PathVariable id: Long,
         @LoggedInUser user: User,
@@ -63,7 +62,7 @@ class TimetableController(
         return ResponseEntity.ok(timetable)
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/api/v1/timetables/{id}")
     fun delete(
         @PathVariable id: Long,
         @LoggedInUser user: User,
