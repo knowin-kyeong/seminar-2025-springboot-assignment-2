@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS time_space(
+CREATE TABLE IF NOT EXISTS locationtimes(
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     lecture_id BIGINT NOT NULL,
     day_of_week INT NOT NULL,
