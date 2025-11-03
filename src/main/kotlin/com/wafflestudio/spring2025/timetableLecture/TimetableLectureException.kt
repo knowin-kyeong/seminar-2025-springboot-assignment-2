@@ -1,6 +1,7 @@
 package com.wafflestudio.spring2025.timetableLecture
 
 import com.wafflestudio.spring2025.DomainException
+import com.wafflestudio.spring2025.lecture.LectureNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
 import com.wafflestudio.spring2025.timetable.TimetableNotFoundException
@@ -14,11 +15,7 @@ sealed class TimetableLectureException(
 
 typealias InvalidTimetableException = TimetableNotFoundException
 
-class InvalidLectureIdException: TimetableLectureException(
-    errorCode = 0,
-    httpStatusCode = HttpStatus.BAD_REQUEST,
-    msg = "Invalid lecture id",
-)
+typealias InvalidLectureIdException = LectureNotFoundException
 
 class TimetableAccessForbiddenException: TimetableLectureException(
     errorCode = 0,

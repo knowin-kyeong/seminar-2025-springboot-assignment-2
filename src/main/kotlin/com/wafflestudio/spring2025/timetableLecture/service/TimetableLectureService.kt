@@ -1,5 +1,7 @@
 package com.wafflestudio.spring2025.timetableLecture.service
 
+import com.wafflestudio.spring2025.lecture.LectureNotFoundException
+import com.wafflestudio.spring2025.lecture.repository.LectureRepository
 import com.wafflestudio.spring2025.timetable.TimetableNotFoundException
 import com.wafflestudio.spring2025.timetable.dto.core.TimetableDto
 import com.wafflestudio.spring2025.timetable.repository.TimetableRepository
@@ -54,7 +56,7 @@ class TimetableLectureService(
         timetableId: Long,
         lectureId: Long,
         user: User,
-    ): TimetableDto {
+    ): Unit {
         val timetable = timetableRepository.findByIdOrNull(timetableId) ?: throw TimetableNotFoundException()
         if (timetable.userId != user.id) {
             throw TimetableAccessForbiddenException()

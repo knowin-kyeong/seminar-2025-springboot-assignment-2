@@ -6,5 +6,5 @@ CREATE TABLE IF NOT EXISTS locationtimes(
     end_time INT NOT NULL,
     location VARCHAR(512) NULL,
 
-    fk_lecture FOREIGN KEY (lecture_id) REFERENCES lectures(id) ON DELETE CASCADE
+    CONSTRAINT locationtimes__fk__lecture_id FOREIGN KEY (lecture_id) REFERENCES lectures(id) ON DELETE CASCADE
 );
