@@ -6,6 +6,8 @@ import com.wafflestudio.spring2025.comment.model.Comment
 import com.wafflestudio.spring2025.comment.repository.CommentRepository
 import com.wafflestudio.spring2025.post.model.Post
 import com.wafflestudio.spring2025.post.repository.PostRepository
+import com.wafflestudio.spring2025.timetable.model.Timetable
+import com.wafflestudio.spring2025.timetable.repository.TimetableRepository
 import com.wafflestudio.spring2025.user.JwtTokenProvider
 import com.wafflestudio.spring2025.user.model.User
 import com.wafflestudio.spring2025.user.repository.UserRepository
@@ -18,6 +20,7 @@ class DataGenerator(
     private val userRepository: UserRepository,
     private val boardRepository: BoardRepository,
     private val postRepository: PostRepository,
+    private val timetableRepository: TimetableRepository,
     private val commentRepository: CommentRepository,
     private val jwtTokenProvider: JwtTokenProvider,
 ) {
@@ -78,4 +81,21 @@ class DataGenerator(
             )
         return comment
     }
+
+    fun generateTimetable(
+        user: User,
+        name: String = "Default Name",
+        year: Int = 2025,
+        semester: Int = 1,
+    ): Timetable =
+        timetableRepository.save(
+            Timetable(
+                userId = user.id!!,
+                name = name,
+                year = year,
+                semester = semester,
+            ),
+        )
+
+
 }

@@ -7,9 +7,26 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.web.client.TestRestTemplate
+import org.springframework.stereotype.Repository
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.testcontainers.junit.jupiter.Testcontainers
+
+import com.wafflestudio.spring2025.timetable.repository.TimetableRepository
+import com.wafflestudio.spring2025.timetable.dto.CreateTimetableRequest
+import com.wafflestudio.spring2025.timetable.dto.UpdateTimetableRequest
+
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.http.MediaType
+import org.hamcrest.Matchers.hasItems
+import org.hamcrest.Matchers.hasSize
+
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -21,15 +38,47 @@ class TimetableIntegrationTest
         private val mvc: MockMvc,
         private val mapper: ObjectMapper,
         private val dataGenerator: DataGenerator,
+        private val timetableRepository: TimetableRepository,
+        // private val courseRepository: CourseRepository
     ) {
         @Test
         fun `should create a timetable`() {
             // 시간표를 생성할 수 있다
+            val (user, token) = dataGenerator.generateUser()
+            val request = CreateTimetableRequest(
+                name = "테스트용 시간표",
+                year = 2025,
+                semester = 2,
+            )
+
+            mvc
+                .perform(
+                post("/api/v1/timetables")
+                    .header("Authorization", "Bearer $token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(request))
+            ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.id").exists())
+            .andExpect(jsonPath("$.name").value("테스트용 시간표"))
+            .andExpect(jsonPath("$.semester").value(2))
+            .andExpect(jsonPath("$.year").value(2025))
         }
 
         @Test
         fun `should retrieve all own timetables`() {
             // 자신의 모든 시간표 목록을 조회할 수 있다
+            val (user, token) = dataGenerator.generateUser()
+            val timetable1 = dataGenerator.generateTimetable(user=user, name="Timetable 1")
+            val timetable2 = dataGenerator.generateTimetable(user=user, name="Timetable 2")
+
+            mvc
+                .perform(
+                    get("/api/v1/timetables")
+                        .header("Authorization", "Bearer $token")
+                ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].name").value("Timetable 1"))
+                .andExpect(jsonPath("$[1].name").value("Timetable 2"))
         }
 
         @Test
@@ -40,21 +89,70 @@ class TimetableIntegrationTest
         @Test
         fun `should update timetable name`() {
             // 시간표 이름을 수정할 수 있다
+            val (user, token) = dataGenerator.generateUser()
+            val timetable = dataGenerator.generateTimetable(user = user, name = "Before")
+
+            val request = UpdateTimetableRequest(name = "After")
+            
+            mvc
+                .perform(
+                    patch("/api/v1/timetables/${timetable.id!!}")
+                        .header("Authorization", "Bearer $token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.id").value(timetable.id!!))
+                .andExpect(jsonPath("$.name").value("After"))
         }
 
         @Test
         fun `should not update another user's timetable`() {
             // 다른 사람의 시간표는 수정할 수 없다
+            val (user1, token1) = dataGenerator.generateUser()
+            val (user2, token2) = dataGenerator.generateUser()
+            val timetable = dataGenerator.generateTimetable(user = user1, name = "User1 Timetable")
+
+            val request = UpdateTimetableRequest(name = "User2's Name")
+
+            mvc
+                .perform(
+                    patch("/api/v1/timetables/${timetable.id!!}")
+                        .header("Authorization", "Bearer $token2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)),
+                ).andExpect(status().isForbidden)
+
         }
 
         @Test
         fun `should delete a timetable`() {
             // 시간표를 삭제할 수 있다
+            val (user, token) = dataGenerator.generateUser()
+            val timetable = dataGenerator.generateTimetable(user = user, name = "To Delete")
+
+            // when & then
+            mvc
+                .perform(
+                    delete("/api/v1/timetables/${timetable.id!!}")
+                        .header("Authorization", "Bearer $token"),
+                ).andExpect(status().isNoContent)
+
+            assert(timetableRepository.findById(timetable.id!!).isEmpty)
         }
 
         @Test
         fun `should not delete another user's timetable`() {
             // 다른 사람의 시간표는 삭제할 수 없다
+            val (user1, token1) = dataGenerator.generateUser()
+            val (user2, token2) = dataGenerator.generateUser()
+            val timetable = dataGenerator.generateTimetable(user = user1, name = "User1 Timetable")
+
+            // when & then
+            mvc
+                .perform(
+                    delete("/api/v1/timetables/${timetable.id!!}")
+                        .header("Authorization", "Bearer $token2"),
+                ).andExpect(status().isForbidden)
         }
 
         @Test
