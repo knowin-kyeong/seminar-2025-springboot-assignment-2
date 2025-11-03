@@ -86,6 +86,23 @@ class TimetableIntegrationTest
         @Test
         fun `should retrieve timetable details`() {
             // 시간표 상세 정보를 조회할 수 있다
+            val (user, token) = dataGenerator.generateUser()
+            val timetable = dataGenerator.generateTimetable(user=user, name="Timetable 1")
+            val lecture = dataGenerator.generateLectureandLocationTime(credit = 2)
+            dataGenerator.connectTimetableWithLecture(timetable, lecture)
+
+            mvc.perform(
+                get("/api/v1/timetables/{id}", timetable.id)
+                    .header("Authorization", "Bearer $token")
+                    .contentType(MediaType.APPLICATION_JSON),
+                ).andExpect(status().isOk)
+                .andExpect(jsonPath("$.timetable.name").value(timetable.name))
+                .andExpect(jsonPath("$.timetable.year").value(timetable.year))
+                .andExpect(jsonPath("$.timetable.semester").value(timetable.semester.toString())) // .toString()은 'semester'가 Enum인 경우를 대비
+                .andExpect(jsonPath("$.credits").value(2))
+                .andExpect(jsonPath("$.lectureAndLocationTimeDtos.length()").value(1))
+                .andExpect(jsonPath("$.lectureAndLocationTimeDtos[0].lecture.title").value(lecture.title))
+                .andExpect(jsonPath("$.lectureAndLocationTimeDtos[0].lecture.credit").value(2))
         }
 
         @Test
@@ -158,9 +175,9 @@ class TimetableIntegrationTest
         }
 
         @Test
+        @Disabled("TODO")
         fun `should search for courses`() {
             // 강의를 검색할 수 있다
-            // TODO
         }
 
         @Test
@@ -185,6 +202,7 @@ class TimetableIntegrationTest
         }
 
         @Test
+        @Disabled("TODO")
         fun `should return error when adding overlapping course to timetable`() {
             // 시간표에 강의 추가 시, 시간이 겹치면 에러를 반환한다
         }
@@ -251,11 +269,13 @@ class TimetableIntegrationTest
         }
 
         @Test
+        @Disabled("TODO")
         fun `should return correct course list and total credits when retrieving timetable details`() {
             // 시간표 상세 조회 시, 강의 정보 목록과 총 학점이 올바르게 반환된다
         }
 
         @Test
+        @Disabled("TODO")
         fun `should paginate correctly when searching for courses`() {
             // 강의 검색 시, 페이지네이션이 올바르게 동작한다
         }

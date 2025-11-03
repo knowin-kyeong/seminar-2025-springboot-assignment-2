@@ -8,6 +8,7 @@ import com.wafflestudio.spring2025.timetable.dto.core.TimetableDto
 import com.wafflestudio.spring2025.timetable.service.TimetableService
 import com.wafflestudio.spring2025.timetableLecture.dto.CreateTimetableLectureRequest
 import com.wafflestudio.spring2025.timetableLecture.dto.CreateTimetableLectureResponse
+import com.wafflestudio.spring2025.timetableLecture.dto.ListTimetableLectureResponse
 import com.wafflestudio.spring2025.timetableLecture.service.TimetableLectureService
 import com.wafflestudio.spring2025.user.LoggedInUser
 import com.wafflestudio.spring2025.user.model.User
@@ -37,6 +38,15 @@ class TimetableLectureController(
                 user = user
             )
         return ResponseEntity.ok(timetableLecture)
+    }
+
+    @GetMapping("/api/v1/timetables/{id}")
+    fun list(
+        @PathVariable id: Long,
+        @LoggedInUser user: User,
+    ): ResponseEntity<ListTimetableLectureResponse> {
+        val listTimetableLectureResponse = timetableLectureService.listLectures(id, user)
+        return ResponseEntity.ok(listTimetableLectureResponse)
     }
 
     @DeleteMapping("/api/v1/timetables/{id}/lectures/{lectureId}")
