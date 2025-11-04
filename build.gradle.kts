@@ -48,6 +48,11 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:mysql")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+
+    // for fetch Sugang service
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.apache.poi:poi:5.2.5")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 }
 
 kotlin {

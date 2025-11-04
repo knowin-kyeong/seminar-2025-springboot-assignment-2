@@ -10,11 +10,10 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/v1/lectures")
 class LectureController(
     private val lectureService: LectureService,
 ) {
-    @GetMapping
+    @GetMapping("/api/v1/lectures")
     fun listFromKeyword(
         @RequestParam(name = "year", defaultValue = "2025") year: Int,
         @RequestParam(name = "semester", defaultValue = "2") semester: Int,
