@@ -53,6 +53,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.apache.poi:poi:5.2.5")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+
+    // for swagger
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
 }
 
 kotlin {
