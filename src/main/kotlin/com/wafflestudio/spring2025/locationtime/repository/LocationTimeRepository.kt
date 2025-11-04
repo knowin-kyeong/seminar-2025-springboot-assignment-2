@@ -5,4 +5,5 @@ import org.springframework.data.repository.ListCrudRepository
 
 interface LocationTimeRepository : ListCrudRepository<LocationTime, Long> {
     fun findByLectureId(lectureId: Long): List<LocationTime>
+    fun findAllByLectureIdIn(lectureIds: List<Long>): List<LocationTime>
 }

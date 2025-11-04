@@ -19,6 +19,7 @@ import com.wafflestudio.spring2025.user.model.User
 import com.wafflestudio.spring2025.user.repository.UserRepository
 import org.mindrot.jbcrypt.BCrypt
 import org.springframework.stereotype.Component
+import kotlin.String
 import kotlin.random.Random
 
 @Component
@@ -119,10 +120,17 @@ class DataGenerator(
                     year = 2025,
                     semester = 2,
                     title = title ?: "title-${Random.nextInt(10000)}",
+                    subtitle = null,
                     lectureNumber = Random.nextInt(10000).toString(),
                     classNumber = Random.nextInt(1000).toString(),
                     credit = credit,
-                )
+                    classification = "전선",
+                    college = "공과대학",
+                    department = "컴퓨터공학부",
+                    academicCourse = "학사",
+                    academicYear = "3",
+                    instructor = "문봉기",
+        )
             )
 
         val locationTime =
