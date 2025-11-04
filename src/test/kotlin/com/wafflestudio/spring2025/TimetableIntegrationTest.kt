@@ -27,8 +27,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.http.MediaType
-import org.hamcrest.Matchers.hasItems
-import org.hamcrest.Matchers.hasSize
 import org.junit.jupiter.api.Assertions.assertTrue
 
 @SpringBootTest
@@ -321,9 +319,30 @@ class TimetableIntegrationTest
         }
 
         @Test
-        @Disabled("TODO")
         fun `should return correct course list and total credits when retrieving timetable details`() {
             // 시간표 상세 조회 시, 강의 정보 목록과 총 학점이 올바르게 반환된다
+            val (user, token) = dataGenerator.generateUser()
+            val timetable = dataGenerator.generateTimetable(user = user, name = "User1 Timetable")
+
+            val lecture1 = dataGenerator.generateLectureandLocationTime(credit = 2)
+            val lecture2 = dataGenerator.generateLectureandLocationTime(credit = 3)
+            val lecture3 = dataGenerator.generateLectureandLocationTime(credit = 4)
+            val lecture4 = dataGenerator.generateLectureandLocationTime(credit = 5)
+
+            dataGenerator.connectTimetableWithLecture(timetable, lecture1)
+            dataGenerator.connectTimetableWithLecture(timetable, lecture2)
+            dataGenerator.connectTimetableWithLecture(timetable, lecture3)
+            dataGenerator.connectTimetableWithLecture(timetable, lecture4)
+
+            mvc.perform (
+                get("/api/v1/timetables/${timetable.id!!}")
+                    .header("Authorization", "Bearer $token")
+                    .contentType(MediaType.APPLICATION_JSON),
+            ).andExpect (status().isOk)
+                .andExpect(jsonPath("$.lectureAndLocationTimeDtos.length()").value(4))
+                .andExpect(jsonPath("$.lectureAndLocationTimeDtos[0].lecture.title").value(lecture1.title))
+                .andExpect(jsonPath("$.lectureAndLocationTimeDtos[0].lecture.credit").value(lecture1.credit))
+                .andExpect(jsonPath("$.credits").value(14))
         }
 
         @Test
