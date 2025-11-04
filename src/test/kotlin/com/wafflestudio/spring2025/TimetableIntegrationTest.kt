@@ -2,6 +2,7 @@ package com.wafflestudio.spring2025
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.wafflestudio.spring2025.helper.DataGenerator
+import com.wafflestudio.spring2025.lecture.dto.ListLectureResponse
 import com.wafflestudio.spring2025.lecture.repository.LectureRepository
 import com.wafflestudio.spring2025.locationtime.repository.LocationTimeRepository
 import com.wafflestudio.spring2025.timetable.dto.CreateTimetableRequest
@@ -9,7 +10,6 @@ import com.wafflestudio.spring2025.timetable.dto.UpdateTimetableRequest
 import com.wafflestudio.spring2025.timetable.repository.TimetableRepository
 import com.wafflestudio.spring2025.timetableLecture.dto.CreateTimetableLectureRequest
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -172,9 +172,32 @@ class TimetableIntegrationTest
         }
 
         @Test
-        @Disabled("TODO")
         fun `should search for courses`() {
             // 강의를 검색할 수 있다
+            val (user, token) = dataGenerator.generateUser()
+
+            repeat(5) {
+                dataGenerator.generateLectureWithSemester(2025, 1)
+                dataGenerator.generateLectureWithSemester(2025, 2)
+                dataGenerator.generateLectureWithSemester(2024, 2)
+            }
+            val lecture = dataGenerator.generateLectureWithSemester(2025, 2)
+            dataGenerator.generateLectureWithSemester(2024, 2, lecture.title)
+
+            val response =
+                mvc
+                    .perform(
+                        get("/api/v1/lectures?year=2025&semester=2&query=${lecture.title}")
+                            .header("Authorization", "Bearer $token"),
+                    ).andExpect(status().isOk)
+                    .andReturn()
+                    .response
+                    .getContentAsString(Charsets.UTF_8)
+                    .let {
+                        mapper.readValue(it, ListLectureResponse::class.java)
+                    }
+
+            assertTrue(response.data.size == 1 && response.data[0].id == lecture.id)
         }
 
         @Test
@@ -356,8 +379,44 @@ class TimetableIntegrationTest
         }
 
         @Test
-        @Disabled("TODO")
         fun `should paginate correctly when searching for courses`() {
             // 강의 검색 시, 페이지네이션이 올바르게 동작한다
+            val (user, token) = dataGenerator.generateUser()
+
+            repeat(40) {
+                dataGenerator.generateLectureWithSemester(2025, 1)
+            }
+
+            val response =
+                mvc
+                    .perform(
+                        get("/api/v1/lectures?year=2025&semester=1&size=20")
+                            .header("Authorization", "Bearer $token"),
+                    ).andExpect(status().isOk)
+                    .andExpect(jsonPath("$.paging.hasNext").value(true))
+                    .andReturn()
+                    .response
+                    .getContentAsString(Charsets.UTF_8)
+                    .let {
+                        mapper.readValue(it, ListLectureResponse::class.java)
+                    }
+
+            assertTrue(response.data.size == 20)
+
+            val nextResponse =
+                mvc
+                    .perform(
+                        get("/api/v1/lectures?year=2025&semester=1&size=20&cursor=${response.paging.nextCursor}")
+                            .header("Authorization", "Bearer $token"),
+                    ).andExpect(status().isOk)
+                    .andExpect(jsonPath("$.paging.hasNext").value(false))
+                    .andReturn()
+                    .response
+                    .getContentAsString(Charsets.UTF_8)
+                    .let {
+                        mapper.readValue(it, ListLectureResponse::class.java)
+                    }
+
+            assertTrue(nextResponse.data.size == 20)
         }
     }

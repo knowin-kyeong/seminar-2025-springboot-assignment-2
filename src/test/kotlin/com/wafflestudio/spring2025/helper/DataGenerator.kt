@@ -146,6 +146,33 @@ class DataGenerator(
         return lecture
     }
 
+    fun generateLectureWithSemester(
+        year: Int,
+        semester: Int,
+        title: String? = null,
+    ): Lecture {
+        val lecture =
+            lectureRepository.save(
+                Lecture(
+                    year = year,
+                    semester = semester,
+                    title = title ?: "title-${Random.nextInt(10000)}",
+                    subtitle = null,
+                    lectureNumber = Random.nextInt(10000).toString(),
+                    classNumber = Random.nextInt(1000).toString(),
+                    credit = 3,
+                    classification = "전선",
+                    college = "공과대학",
+                    department = "컴퓨터공학부",
+                    academicCourse = "학사",
+                    academicYear = "3",
+                    instructor = "문봉기",
+                ),
+            )
+
+        return lecture
+    }
+
     fun connectTimetableWithLecture(
         timetable: Timetable,
         lecture: Lecture,
