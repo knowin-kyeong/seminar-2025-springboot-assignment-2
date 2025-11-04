@@ -37,8 +37,8 @@ class SugangSnuRepository(
         year: Int,
         semester: Int,
         language: String = "ko",
-    ): PooledDataBuffer? {
-        return sugangSnuApi
+    ): PooledDataBuffer? =
+        sugangSnuApi
             .get()
             .uri { builder ->
                 builder.run {
@@ -53,5 +53,4 @@ class SugangSnuRepository(
             .retrieve()
             .bodyToMono(PooledDataBuffer::class.java)
             .block()
-            }
 }

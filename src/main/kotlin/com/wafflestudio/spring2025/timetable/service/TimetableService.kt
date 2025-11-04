@@ -1,6 +1,5 @@
 package com.wafflestudio.spring2025.timetable.service
 
-
 import com.wafflestudio.spring2025.timetable.TimetableBlankNameException
 import com.wafflestudio.spring2025.timetable.TimetableNameConflictException
 import com.wafflestudio.spring2025.timetable.TimetableNotFoundException
@@ -82,7 +81,6 @@ class TimetableService(
         return TimetableDto(updated)
     }
 
-
     fun delete(
         timetableId: Long,
         user: User,
@@ -110,5 +108,4 @@ class TimetableService(
 
         return TimetableDto(timetable)
     }
-
 }

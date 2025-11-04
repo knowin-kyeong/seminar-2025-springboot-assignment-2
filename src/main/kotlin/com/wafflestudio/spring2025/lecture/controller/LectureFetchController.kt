@@ -9,9 +9,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class LectureFetchController(
-    private val sugangSnuLectureSyncService: SugangSnuLectureSyncService
+    private val sugangSnuLectureSyncService: SugangSnuLectureSyncService,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     /**
@@ -22,7 +21,7 @@ class LectureFetchController(
     @PostMapping("/api/v1/lectures/fetch")
     fun fetchLectures(
         @RequestParam("year") year: Int,
-        @RequestParam("semester") semester: Int
+        @RequestParam("semester") semester: Int,
     ): ResponseEntity<Map<String, String>> {
         log.info("Lecture fetch request received: year=$year, semester=$semester")
         return try {
@@ -32,7 +31,6 @@ class LectureFetchController(
             val successMessage = "Lecture sync successful for $year $semester"
             log.info(successMessage)
             ResponseEntity.ok(mapOf("message" to successMessage))
-
         } catch (e: Exception) {
             log.error("Lecture sync failed for $year $semester", e)
             ResponseEntity

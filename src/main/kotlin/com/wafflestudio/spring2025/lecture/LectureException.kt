@@ -11,8 +11,9 @@ sealed class LectureException(
     cause: Throwable? = null,
 ) : DomainException(errorCode, httpStatusCode, msg, cause)
 
-class LectureNotFoundException: LectureException (
-    errorCode = 0,
-    httpStatusCode = HttpStatus.NOT_FOUND,
-    msg = "Lecture not found",
-)
+class LectureNotFoundException :
+    LectureException(
+        errorCode = 0,
+        httpStatusCode = HttpStatus.NOT_FOUND,
+        msg = "Lecture not found",
+    )

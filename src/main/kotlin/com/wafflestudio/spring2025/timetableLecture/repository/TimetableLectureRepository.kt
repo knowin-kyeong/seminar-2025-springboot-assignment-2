@@ -9,12 +9,10 @@ interface TimetableLectureRepository : ListCrudRepository<TimetableLecture, Long
         lectureId: Long,
     ): Boolean
 
-    fun findByTimetableId(
-        timetableId: Long,
-    ): List<TimetableLecture>
+    fun findByTimetableId(timetableId: Long): List<TimetableLecture>
 
     fun deleteByTimetableIdAndLectureId(
         timetableId: Long,
-        lectureId: Long
+        lectureId: Long,
     )
 }

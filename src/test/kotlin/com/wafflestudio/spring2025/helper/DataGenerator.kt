@@ -130,7 +130,7 @@ class DataGenerator(
                     academicCourse = "학사",
                     academicYear = "3",
                     instructor = "문봉기",
-        )
+                ),
             )
 
         val locationTime =
@@ -139,8 +139,8 @@ class DataGenerator(
                     lectureId = lecture.id!!,
                     dayOfWeek = dayofWeek,
                     startTime = startTime,
-                    endTime = endTime
-                )
+                    endTime = endTime,
+                ),
             )
 
         return lecture
@@ -148,14 +148,14 @@ class DataGenerator(
 
     fun connectTimetableWithLecture(
         timetable: Timetable,
-        lecture: Lecture
-    ): TimetableLecture{
+        lecture: Lecture,
+    ): TimetableLecture {
         val timetableLecture =
             timetableLectureRepository.save(
                 TimetableLecture(
                     timetableId = timetable.id!!,
                     lectureId = lecture.id!!,
-                )
+                ),
             )
 
         return timetableLecture

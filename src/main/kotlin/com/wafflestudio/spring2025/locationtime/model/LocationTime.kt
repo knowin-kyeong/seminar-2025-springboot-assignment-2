@@ -2,8 +2,6 @@ package com.wafflestudio.spring2025.locationtime.model
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Table
-import java.time.DayOfWeek
-import java.time.LocalTime
 
 @Table("locationtimes")
 class LocationTime(

@@ -1,11 +1,5 @@
 package com.wafflestudio.spring2025.timetableLecture.controller
 
-import com.wafflestudio.spring2025.timetable.dto.CreateTimetableRequest
-import com.wafflestudio.spring2025.timetable.dto.CreateTimetableResponse
-import com.wafflestudio.spring2025.timetable.dto.ListTimetableResponse
-import com.wafflestudio.spring2025.timetable.dto.UpdateTimetableRequest
-import com.wafflestudio.spring2025.timetable.dto.core.TimetableDto
-import com.wafflestudio.spring2025.timetable.service.TimetableService
 import com.wafflestudio.spring2025.timetableLecture.dto.CreateTimetableLectureRequest
 import com.wafflestudio.spring2025.timetableLecture.dto.CreateTimetableLectureResponse
 import com.wafflestudio.spring2025.timetableLecture.dto.ListTimetableLectureResponse
@@ -15,7 +9,6 @@ import com.wafflestudio.spring2025.user.model.User
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -35,7 +28,7 @@ class TimetableLectureController(
             timetableLectureService.create(
                 timetableId = id,
                 lectureId = createRequest.lectureId,
-                user = user
+                user = user,
             )
         return ResponseEntity.ok(timetableLecture)
     }
@@ -53,12 +46,12 @@ class TimetableLectureController(
     fun delete(
         @PathVariable id: Long,
         @PathVariable lectureId: Long,
-        @LoggedInUser user: User
+        @LoggedInUser user: User,
     ): ResponseEntity<Unit> {
         timetableLectureService.delete(
             timetableId = id,
             lectureId = lectureId,
-            user = user
+            user = user,
         )
         return ResponseEntity.noContent().build()
     }
