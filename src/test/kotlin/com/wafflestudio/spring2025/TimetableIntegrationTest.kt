@@ -201,12 +201,41 @@ class TimetableIntegrationTest
                 .andExpect(jsonPath("$.lectureId").value(lecture.id))
         }
 
-        @Test
-        @Disabled("TODO")
-        fun `should return error when adding overlapping course to timetable`() {
-            // 시간표에 강의 추가 시, 시간이 겹치면 에러를 반환한다
-        }
+    @Test
+    fun `should return error when adding overlapping course to timetable`() {
+        val (user, token) = dataGenerator.generateUser()
+        val timetable = dataGenerator.generateTimetable(user = user, year = 2025, semester = 2)
 
+        // 강의 A: 월 10:00 ~ 11:30
+        val lectureA = dataGenerator.generateLectureandLocationTime(
+            title = "기존 강의 A",
+            dayofWeek = 1,
+            startTime = 1000,
+            endTime = 1130
+        )
+        dataGenerator.connectTimetableWithLecture(timetable, lectureA)
+
+        // 강의 B: 월 10:30 ~ 12:00 (겹침)
+        val lectureB = dataGenerator.generateLectureandLocationTime(
+            title = "겹치는 강의 B",
+            dayofWeek = 1,
+            startTime = 1030,
+            endTime = 1200
+        )
+
+        val request = CreateTimetableLectureRequest(
+            lectureId = lectureB.id!!
+        )
+
+        // 강의 B 추가 시도 시 409 CONFLICT 에러 검증
+        mvc.perform(
+            post("/api/v1/timetables/${timetable.id!!}/lectures")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(request)),
+        ).andExpect(status().isConflict)
+            .andExpect(jsonPath("$.error").value("Lecture time conflict"))
+    }
         @Test
         fun `should not add a course to another user's timetable`() {
             // 다른 사람의 시간표에는 강의를 추가할 수 없다
