@@ -3,6 +3,7 @@ package com.wafflestudio.spring2025
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.wafflestudio.spring2025.helper.DataGenerator
 import com.wafflestudio.spring2025.lecture.repository.LectureRepository
+import com.wafflestudio.spring2025.locationtime.repository.LocationTimeRepository
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -28,7 +29,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.http.MediaType
 import org.hamcrest.Matchers.hasItems
 import org.hamcrest.Matchers.hasSize
-
+import org.junit.jupiter.api.Assertions.assertTrue
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -42,6 +43,7 @@ class TimetableIntegrationTest
         private val dataGenerator: DataGenerator,
         private val timetableRepository: TimetableRepository,
         private val lectureRepository: LectureRepository,
+        private val locationTimeRepository: LocationTimeRepository
     ) {
         @Test
         fun `should create a timetable`() {
@@ -292,9 +294,30 @@ class TimetableIntegrationTest
         }
 
         @Test
-        @Disabled("곧 안내드리겠습니다")
         fun `should fetch and save course information from SNU course registration site`() {
             // 서울대 수강신청 사이트에서 강의 정보를 가져와 저장할 수 있다
+
+            val (user, token) = dataGenerator.generateUser()
+
+            val year = 2025
+            val semester = 2
+
+            mvc.perform(
+                post("/api/v1/lectures/fetch")
+                    .header("Authorization", "Bearer $token")
+                    .param("year", year.toString())
+                    .param("semester", semester.toString())
+            ).andExpect(status().isOk)
+            // .andExpect(jsonPath("$.message").value("Lecture sync successful for $year $semester"))
+
+            val lectures = lectureRepository.findAll().toList()
+            val locationTimes = locationTimeRepository.findAll().toList()
+
+            println("Fetched and saved ${lectures.size} lectures.")
+            println("Fetched and saved ${locationTimes.size} locationTimes.")
+
+            assertTrue(lectures.size > 1000) { "강의 정보가 DB에 1000개 이상 저장되어야 합니다." }
+            assertTrue(locationTimes.size > 1000) { "강의 시간/장소 정보가 DB에 1000개 이상 저장되어야 합니다." }
         }
 
         @Test
