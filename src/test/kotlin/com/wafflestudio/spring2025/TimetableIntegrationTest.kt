@@ -11,7 +11,6 @@ import com.wafflestudio.spring2025.timetable.dto.UpdateTimetableRequest
 import com.wafflestudio.spring2025.timetable.repository.TimetableRepository
 import com.wafflestudio.spring2025.timetableLecture.dto.CreateTimetableLectureRequest
 import com.wafflestudio.spring2025.timetableLecture.repository.TimetableLectureRepository
-import org.apache.tomcat.util.http.parser.Authorization
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
