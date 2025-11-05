@@ -150,7 +150,8 @@ class DataGenerator(
         year: Int,
         semester: Int,
         title: String? = null,
-    ): Lecture {
+        instructor: String? = null,
+        ): Lecture {
         val lecture =
             lectureRepository.save(
                 Lecture(
@@ -166,7 +167,7 @@ class DataGenerator(
                     department = "컴퓨터공학부",
                     academicCourse = "학사",
                     academicYear = "3",
-                    instructor = "문봉기",
+                    instructor = instructor ?: "DefaultInstructor",
                 ),
             )
 

@@ -104,11 +104,11 @@ class TimetableLectureService(
             )
         }
 
-        val lectures = lectureIds.map { lectureRepository.findByIdOrNull(it) }
+        val lectures = lectureRepository.findAllByIdIn(lectureIds)
         val allLocationTimes = locationTimeRepository.findAllByLectureIdIn(lectureIds)
         val locationTimesMap = allLocationTimes.groupBy { it.lectureId }
-
         val lectureAndLocationTimes = mutableListOf<LectureAndLocationTimeDto>()
+
         for (i in lectureIds.indices) {
             val currentLecture = lectures[i]!!
             val currentLocationTimes = locationTimesMap[currentLecture.id] ?: emptyList()
