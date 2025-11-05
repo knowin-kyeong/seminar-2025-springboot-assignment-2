@@ -42,7 +42,11 @@ class DataGenerator(
             userRepository.save(
                 User(
                     username = username ?: "user-${Random.Default.nextInt(1000000)}",
-                    password = BCrypt.hashpw(password ?: "password-${Random.Default.nextInt(1000000)}", BCrypt.gensalt()),
+                    password =
+                        BCrypt.hashpw(
+                            password ?: "password-${Random.Default.nextInt(1000000)}",
+                            BCrypt.gensalt(),
+                        ),
                 ),
             )
         return user to jwtTokenProvider.createToken(user.username)
@@ -150,6 +154,7 @@ class DataGenerator(
         year: Int,
         semester: Int,
         title: String? = null,
+        instructor: String? = null,
     ): Lecture {
         val lecture =
             lectureRepository.save(
@@ -166,7 +171,7 @@ class DataGenerator(
                     department = "컴퓨터공학부",
                     academicCourse = "학사",
                     academicYear = "3",
-                    instructor = "문봉기",
+                    instructor = instructor ?: "DefaultInstructor",
                 ),
             )
 

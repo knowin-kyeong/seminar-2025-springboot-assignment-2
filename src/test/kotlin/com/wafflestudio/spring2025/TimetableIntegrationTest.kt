@@ -2,6 +2,7 @@ package com.wafflestudio.spring2025
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.wafflestudio.spring2025.helper.DataGenerator
+import com.wafflestudio.spring2025.helper.QueryCounter
 import com.wafflestudio.spring2025.lecture.dto.ListLectureResponse
 import com.wafflestudio.spring2025.lecture.repository.LectureRepository
 import com.wafflestudio.spring2025.locationtime.repository.LocationTimeRepository
@@ -9,6 +10,7 @@ import com.wafflestudio.spring2025.timetable.dto.CreateTimetableRequest
 import com.wafflestudio.spring2025.timetable.dto.UpdateTimetableRequest
 import com.wafflestudio.spring2025.timetable.repository.TimetableRepository
 import com.wafflestudio.spring2025.timetableLecture.dto.CreateTimetableLectureRequest
+import com.wafflestudio.spring2025.timetableLecture.repository.TimetableLectureRepository
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,21 +25,25 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @SpringBootTest
 @ActiveProfiles("test")
 @Testcontainers
 @AutoConfigureMockMvc
+@Transactional
 class TimetableIntegrationTest
     @Autowired
     constructor(
         private val mvc: MockMvc,
         private val mapper: ObjectMapper,
         private val dataGenerator: DataGenerator,
+        private val queryCounter: QueryCounter,
         private val timetableRepository: TimetableRepository,
         private val lectureRepository: LectureRepository,
         private val locationTimeRepository: LocationTimeRepository,
+        private val timetableLectureRepository: TimetableLectureRepository,
     ) {
         @Test
         fun `should create a timetable`() {
@@ -141,10 +147,12 @@ class TimetableIntegrationTest
         }
 
         @Test
-        fun `should delete a timetable`() {
-            // 시간표를 삭제할 수 있다
+        fun `should delete a timetable and its associated lectures`() {
+            // 시간표를 삭제할 수 있다.
             val (user, token) = dataGenerator.generateUser()
             val timetable = dataGenerator.generateTimetable(user = user, name = "To Delete")
+            val lecture = dataGenerator.generateLectureandLocationTime()
+            val connection = dataGenerator.connectTimetableWithLecture(timetable, lecture)
 
             // when & then
             mvc
@@ -154,6 +162,7 @@ class TimetableIntegrationTest
                 ).andExpect(status().isNoContent())
 
             assert(timetableRepository.findById(timetable.id!!).isEmpty)
+            assert(timetableLectureRepository.findById(connection.id!!).isEmpty)
         }
 
         @Test
@@ -172,8 +181,8 @@ class TimetableIntegrationTest
         }
 
         @Test
-        fun `should search for courses`() {
-            // 강의를 검색할 수 있다
+        fun `should search for courses by title`() {
+            // 강의명으로 강의를 검색할 수 있다
             val (user, token) = dataGenerator.generateUser()
 
             repeat(5) {
@@ -201,6 +210,48 @@ class TimetableIntegrationTest
         }
 
         @Test
+        fun `should search for courses by instructor name`() {
+            // 교수명으로 강의를 검색할 수 있다
+            val (user, token) = dataGenerator.generateUser()
+
+            repeat(5) {
+                dataGenerator.generateLectureWithSemester(2025, 1)
+                dataGenerator.generateLectureWithSemester(2025, 2)
+                dataGenerator.generateLectureWithSemester(2024, 2)
+            }
+
+            val uniqueInstructorName = "TestInstructor-${kotlin.random.Random.nextInt(10000)}"
+
+            val lecture =
+                dataGenerator.generateLectureWithSemester(
+                    year = 2025,
+                    semester = 2,
+                    instructor = uniqueInstructorName,
+                )
+
+            dataGenerator.generateLectureWithSemester(
+                year = 2024,
+                semester = 2,
+                instructor = uniqueInstructorName,
+            )
+
+            val response =
+                mvc
+                    .perform(
+                        get("/api/v1/lectures?year=2025&semester=2&query=$uniqueInstructorName")
+                            .header("Authorization", "Bearer $token"),
+                    ).andExpect(status().isOk)
+                    .andReturn()
+                    .response
+                    .getContentAsString(Charsets.UTF_8)
+                    .let {
+                        mapper.readValue(it, ListLectureResponse::class.java)
+                    }
+
+            assertTrue(response.data.size == 1 && response.data[0].id == lecture.id)
+        }
+
+        @Test
         fun `should add a course to timetable`() {
             // 시간표에 강의를 추가할 수 있다
             val (user, token) = dataGenerator.generateUser()
@@ -211,56 +262,86 @@ class TimetableIntegrationTest
                 CreateTimetableLectureRequest(
                     lectureId = lecture.id!!,
                 )
-
-            mvc
-                .perform(
-                    post("/api/v1/timetables/${timetable.id!!}/lectures")
-                        .header("Authorization", "Bearer $token")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(request)),
-                ).andExpect(status().isOk)
-                .andExpect(jsonPath("$.timetableId").value(timetable.id!!))
-                .andExpect(jsonPath("$.lectureId").value(lecture.id))
+            queryCounter.assertQueryCount(6) {
+                mvc
+                    .perform(
+                        post("/api/v1/timetables/${timetable.id!!}/lectures")
+                            .header("Authorization", "Bearer $token")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(mapper.writeValueAsString(request)),
+                    ).andExpect(status().isOk)
+                    .andExpect(jsonPath("$.timetableId").value(timetable.id!!))
+                    .andExpect(jsonPath("$.lectureId").value(lecture.id))
+            }
         }
 
         @Test
         fun `should return error when adding overlapping course to timetable`() {
+            // 겹치는 강의를 추가하면 에러를 반환한다.
             val (user, token) = dataGenerator.generateUser()
             val timetable = dataGenerator.generateTimetable(user = user, year = 2025, semester = 2)
 
-            // 강의 A: 월 10:00 ~ 11:30
             val lectureA =
                 dataGenerator.generateLectureandLocationTime(
-                    title = "기존 강의 A",
+                    title = "Base Lecture A",
                     dayofWeek = 1,
                     startTime = 1000,
                     endTime = 1130,
                 )
             dataGenerator.connectTimetableWithLecture(timetable, lectureA)
 
-            // 강의 B: 월 10:30 ~ 12:00 (겹침)
             val lectureB =
                 dataGenerator.generateLectureandLocationTime(
-                    title = "겹치는 강의 B",
+                    title = "Partially Overlapping Lecture B",
                     dayofWeek = 1,
                     startTime = 1030,
                     endTime = 1200,
                 )
+            val requestB = CreateTimetableLectureRequest(lectureId = lectureB.id!!)
 
-            val request =
-                CreateTimetableLectureRequest(
-                    lectureId = lectureB.id!!,
-                )
-
-            // 강의 B 추가 시도 시 409 CONFLICT 에러 검증
             mvc
                 .perform(
                     post("/api/v1/timetables/${timetable.id!!}/lectures")
                         .header("Authorization", "Bearer $token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(request)),
+                        .content(mapper.writeValueAsString(requestB)),
                 ).andExpect(status().isConflict)
                 .andExpect(jsonPath("$.error").value("Lecture time conflict"))
+
+            val lectureC =
+                dataGenerator.generateLectureandLocationTime(
+                    title = "Fully Contained Lecture C",
+                    dayofWeek = 1,
+                    startTime = 1030,
+                    endTime = 1100,
+                )
+            val requestC = CreateTimetableLectureRequest(lectureId = lectureC.id!!)
+
+            mvc
+                .perform(
+                    post("/api/v1/timetables/${timetable.id!!}/lectures")
+                        .header("Authorization", "Bearer $token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(requestC)),
+                ).andExpect(status().isConflict)
+                .andExpect(jsonPath("$.error").value("Lecture time conflict"))
+
+            val lectureD =
+                dataGenerator.generateLectureandLocationTime(
+                    title = "Adjacent Lecture D",
+                    dayofWeek = 1,
+                    startTime = 1130,
+                    endTime = 1230,
+                )
+            val requestD = CreateTimetableLectureRequest(lectureId = lectureD.id!!)
+
+            mvc
+                .perform(
+                    post("/api/v1/timetables/${timetable.id!!}/lectures")
+                        .header("Authorization", "Bearer $token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(requestD)),
+                ).andExpect(status().isOk)
         }
 
         @Test
@@ -366,16 +447,18 @@ class TimetableIntegrationTest
             dataGenerator.connectTimetableWithLecture(timetable, lecture3)
             dataGenerator.connectTimetableWithLecture(timetable, lecture4)
 
-            mvc
-                .perform(
-                    get("/api/v1/timetables/${timetable.id!!}")
-                        .header("Authorization", "Bearer $token")
-                        .contentType(MediaType.APPLICATION_JSON),
-                ).andExpect(status().isOk)
-                .andExpect(jsonPath("$.lectureAndLocationTimeDtos.length()").value(4))
-                .andExpect(jsonPath("$.lectureAndLocationTimeDtos[0].lecture.title").value(lecture1.title))
-                .andExpect(jsonPath("$.lectureAndLocationTimeDtos[0].lecture.credit").value(lecture1.credit))
-                .andExpect(jsonPath("$.credits").value(14))
+            queryCounter.assertQueryCount(5) {
+                mvc
+                    .perform(
+                        get("/api/v1/timetables/${timetable.id!!}")
+                            .header("Authorization", "Bearer $token")
+                            .contentType(MediaType.APPLICATION_JSON),
+                    ).andExpect(status().isOk)
+                    .andExpect(jsonPath("$.lectureAndLocationTimeDtos.length()").value(4))
+                    .andExpect(jsonPath("$.lectureAndLocationTimeDtos[0].lecture.title").value(lecture1.title))
+                    .andExpect(jsonPath("$.lectureAndLocationTimeDtos[0].lecture.credit").value(lecture1.credit))
+                    .andExpect(jsonPath("$.credits").value(14))
+            }
         }
 
         @Test
