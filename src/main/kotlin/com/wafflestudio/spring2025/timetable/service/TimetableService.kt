@@ -26,7 +26,7 @@ class TimetableService(
         if (name.isBlank()) {
             throw TimetableBlankNameException()
         }
-        if (timetableRepository.existsByUserIdAndName(user.id!!, name)) {
+        if (timetableRepository.existsByUserIdAndNameAndYearAndSemester(user.id!!, name, year, semester)) {
             throw TimetableNameConflictException()
         }
 
@@ -67,7 +67,7 @@ class TimetableService(
         if (
             name != null &&
             name != timetable.name &&
-            timetableRepository.existsByUserIdAndName(timetable.userId, name)
+            timetableRepository.existsByUserIdAndNameAndYearAndSemester(timetable.userId, name, timetable.year, timetable.semester)
         ) {
             throw TimetableNameConflictException()
         }

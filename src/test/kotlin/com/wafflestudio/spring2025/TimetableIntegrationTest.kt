@@ -11,6 +11,7 @@ import com.wafflestudio.spring2025.timetable.dto.UpdateTimetableRequest
 import com.wafflestudio.spring2025.timetable.repository.TimetableRepository
 import com.wafflestudio.spring2025.timetableLecture.dto.CreateTimetableLectureRequest
 import com.wafflestudio.spring2025.timetableLecture.repository.TimetableLectureRepository
+import org.apache.tomcat.util.http.parser.Authorization
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -70,6 +71,112 @@ class TimetableIntegrationTest
         }
 
         @Test
+        fun `should not create a timetable with blank name`() {
+            // 빈 이름으로 시간표를 생성할 수 없다
+            val (_, token) = dataGenerator.generateUser()
+            val request =
+                CreateTimetableRequest(
+                    name = "   ",
+                    year = 2025,
+                    semester = 2,
+                )
+
+            mvc
+                .perform(
+                    post("/api/v1/timetables")
+                        .header("Authorization", "Bearer $token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)),
+                ).andExpect(status().isBadRequest)
+        }
+
+        @Test
+        fun `should not create timetables with the same names`() {
+            // 같은 이름을 가진 시간표를 생성할 수 없다
+            val (_, token) = dataGenerator.generateUser()
+            val request =
+                CreateTimetableRequest(
+                    name = "Table",
+                    year = 2025,
+                    semester = 1,
+                )
+
+            mvc
+                .perform(
+                    post("/api/v1/timetables")
+                        .header("Authorization", "Bearer $token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
+
+            mvc
+                .perform(
+                    post("/api/v1/timetables")
+                        .header("Authorization", "Bearer $token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)),
+                ).andExpect(status().isConflict)
+        }
+
+        @Test
+        fun `should create timetables with the same names by other users or semesters, years`() {
+            // 다른 사용자가 만든 이름이 같은 시간표를 생성할 수 있다
+            // 다른 학기/연도에서 만든 이름이 같은 시간표를 생성할 수 있다
+            val (_, token1) = dataGenerator.generateUser()
+            val (_, token2) = dataGenerator.generateUser()
+
+            val request =
+                CreateTimetableRequest(
+                    name = "Table",
+                    year = 2025,
+                    semester = 1,
+                )
+            val requestWithSameNameButOtherSemester =
+                CreateTimetableRequest(
+                    name = "Table",
+                    year = 2025,
+                    semester = 2,
+                )
+            val requestWithSameNameButOtherYear =
+                CreateTimetableRequest(
+                    name = "Table",
+                    year = 2024,
+                    semester = 1,
+                )
+
+            mvc
+                .perform(
+                    post("/api/v1/timetables")
+                        .header("Authorization", "Bearer $token1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
+
+            mvc
+                .perform(
+                    post("/api/v1/timetables")
+                        .header("Authorization", "Bearer $token1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(requestWithSameNameButOtherSemester)),
+                ).andExpect(status().isOk)
+
+            mvc
+                .perform(
+                    post("/api/v1/timetables")
+                        .header("Authorization", "Bearer $token1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(requestWithSameNameButOtherYear)),
+                ).andExpect(status().isOk)
+            mvc
+                .perform(
+                    post("/api/v1/timetables")
+                        .header("Authorization", "Bearer $token2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)),
+                ).andExpect(status().isOk)
+        }
+
+        @Test
         fun `should retrieve all own timetables`() {
             // 자신의 모든 시간표 목록을 조회할 수 있다
             val (user, token) = dataGenerator.generateUser()
@@ -126,6 +233,41 @@ class TimetableIntegrationTest
                 ).andExpect(status().isOk)
                 .andExpect(jsonPath("$.id").value(timetable.id!!))
                 .andExpect(jsonPath("$.name").value("After"))
+        }
+
+        @Test
+        fun `should not update timetable with blank name`() {
+            // 빈 이름으로 시간표를 수정할 수 없다
+            val (user, token) = dataGenerator.generateUser()
+            val timetable = dataGenerator.generateTimetable(user = user, name = "Before")
+
+            val request = UpdateTimetableRequest(name = "   ")
+
+            mvc
+                .perform(
+                    patch("/api/v1/timetables/${timetable.id!!}")
+                        .header("Authorization", "Bearer $token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)),
+                ).andExpect(status().isBadRequest)
+        }
+
+        @Test
+        fun `should not create timetable with existing name`() {
+            // 같은 이름으로 시간표를 수정할 수 없다
+            val (user, token) = dataGenerator.generateUser()
+            val timetable = dataGenerator.generateTimetable(user = user, name = "Before")
+            dataGenerator.generateTimetable(user = user, name = "After") // timetable "After" already exists
+
+            val request = UpdateTimetableRequest(name = "After")
+
+            mvc
+                .perform(
+                    patch("/api/v1/timetables/${timetable.id!!}")
+                        .header("Authorization", "Bearer $token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(request)),
+                ).andExpect(status().isConflict)
         }
 
         @Test
